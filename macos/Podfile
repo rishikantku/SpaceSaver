@@ -1,0 +1,25 @@
+# SpaceSaver macOS Podfile
+# Run 'pod install' in this directory to install dependencies
+
+require_relative '../node_modules/react-native-macos/scripts/react_native_pods'
+
+platform :macos, '12.0'
+
+prepare_react_native_project!
+
+target 'SpaceSaverApp-macOS' do
+  use_react_native_macos!
+
+  # Add any additional pods here
+  # pod 'SomePod', '~> 1.0'
+end
+
+post_install do |installer|
+  react_native_post_install(installer)
+  
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['MACOSX_DEPLOYMENT_TARGET'] = '12.0'
+    end
+  end
+end
