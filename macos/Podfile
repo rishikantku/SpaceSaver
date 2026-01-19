@@ -4,16 +4,19 @@
 #
 # IMPORTANT: Before running 'pod install', ensure you have:
 # 1. Run 'npm install' in the project root
-# 2. Initialized React Native macOS: npx react-native-macos-init
 
 require_relative '../node_modules/react-native-macos/scripts/react_native_pods'
 
 # macOS 15 (Sequoia) minimum deployment target
 platform :macos, '15.0'
 
+# Specify the Xcode project
+project 'SpaceSaverApp.xcodeproj'
+
 prepare_react_native_project!
 
 target 'SpaceSaverApp-macOS' do
+  project 'SpaceSaverApp.xcodeproj'
   # Use the standard React Native helper
   # For react-native-macos, use_react_native! handles macOS configuration
   use_react_native!(
