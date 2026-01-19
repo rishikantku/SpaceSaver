@@ -1,0 +1,14 @@
+# SpaceSaver macOS Dependencies
+# Run 'bundle install' to install Ruby dependencies
+# Then use 'bundle exec pod install' for consistent CocoaPods behavior
+
+source 'https://rubygems.org'
+
+# CocoaPods - use specific version for reproducibility
+gem 'cocoapods', '~> 1.15'
+
+# Xcodeproj - for Xcode project manipulation
+gem 'xcodeproj', '~> 1.24'
+
+# Additional useful gems
+gem 'activesupport', '~> 7.1'

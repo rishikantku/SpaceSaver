@@ -1,5 +1,5 @@
 /**
- * Metro configuration for React Native
+ * Metro configuration for React Native macOS
  * https://github.com/facebook/react-native
  *
  * @format
@@ -17,7 +17,10 @@ const config = {
     }),
   },
   resolver: {
-    sourceExts: ['jsx', 'js', 'ts', 'tsx', 'json'],
+    // Include macOS-specific file extensions for platform resolution
+    sourceExts: ['macos.tsx', 'macos.ts', 'macos.jsx', 'macos.js', 'tsx', 'ts', 'jsx', 'js', 'json'],
+    // Platforms supported by this app
+    platforms: ['macos', 'ios', 'android'],
   },
 };
 

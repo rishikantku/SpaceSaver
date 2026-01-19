@@ -95,17 +95,33 @@ docker-compose run validate
 ## Installation
 
 ### Prerequisites
-- macOS 15 or later
-- Apple Silicon (M1/M2/M3) or Intel Mac
+- macOS 15 (Sequoia) or later
+- Apple Silicon (M1/M2/M3) recommended, Intel Mac supported
 - Node.js 18+
-- Xcode 15+ (for building native app)
-- CocoaPods (for native dependencies)
+- Xcode 16+ (for building native app)
+- CocoaPods 1.15+ (for native dependencies)
 
-### Setup on macOS
+> 📖 **Apple Silicon Users**: See [APPLE_SILICON_SETUP.md](./APPLE_SILICON_SETUP.md) for detailed M1/M2/M3 setup instructions and troubleshooting.
+
+### Quick Setup (Automated)
+
+```bash
+# Clone the repository
+git clone https://github.com/rishikantku/SpaceSaver.git
+cd SpaceSaver
+
+# Run the automated setup script
+./scripts/setup-macos.sh
+```
+
+### Manual Setup on macOS
 
 ```bash
 # 1. Install Homebrew (if not installed)
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# IMPORTANT for Apple Silicon: Add Homebrew to PATH
+eval "$(/opt/homebrew/bin/brew shellenv)"
 
 # 2. Install CocoaPods
 brew install cocoapods
@@ -117,10 +133,13 @@ cd SpaceSaver
 # 4. Install JavaScript dependencies
 npm install
 
-# 5. Install native macOS dependencies
-cd macos && pod install && cd ..
+# 5. Initialize React Native macOS (first time only)
+npx react-native-macos-init --version 0.77.0
 
-# 6. Run the app
+# 6. Install native macOS dependencies
+cd macos && pod install --repo-update && cd ..
+
+# 7. Run the app
 npm run macos
 ```
 

@@ -4,10 +4,13 @@
  * Swift implementation of the native module for macOS operations.
  * This provides direct access to macOS APIs for file system operations,
  * application management, and system information.
+ * 
+ * Designed for macOS 15+ on Apple Silicon M2.
  */
 
 import Foundation
 import AppKit
+import CommonCrypto
 
 @objc(MacOSBridge)
 class MacOSBridge: NSObject {

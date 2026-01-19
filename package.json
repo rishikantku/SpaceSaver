@@ -16,7 +16,8 @@
     "validate": "npm run typecheck && npm run lint && npm test",
     "clean": "rm -rf node_modules && npm install",
     "setup:macos": "bash scripts/setup-macos.sh",
-    "pod:install": "cd macos && pod install || echo 'CocoaPods required - install with: brew install cocoapods'",
+    "pod:install": "cd macos && pod install --repo-update || echo 'CocoaPods required - install with: brew install cocoapods'",
+    "pod:clean": "cd macos && rm -rf Pods Podfile.lock && pod install --repo-update",
     "build:macos": "react-native build-macos --mode Release"
   },
   "dependencies": {
