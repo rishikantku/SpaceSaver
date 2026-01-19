@@ -5,14 +5,15 @@
  * Built with React Native for Apple Silicon M2
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  Pressable,
+  TouchableWithoutFeedback,
   useColorScheme,
+  Alert,
   Platform,
 } from 'react-native';
 
@@ -60,28 +61,40 @@ const cardStyles = StyleSheet.create({
   },
 });
 
-// Simple Button Component - Using Pressable for macOS compatibility
+// Simple Button Component - Using View with responder for macOS compatibility
 const Button: React.FC<{
   title: string;
   onPress: () => void;
   variant?: 'primary' | 'secondary';
 }> = ({ title, onPress, variant = 'primary' }) => {
   const [isPressed, setIsPressed] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
+  
+  const handlePress = useCallback(() => {
+    console.log('Button pressed:', title);
+    Alert.alert('Button Pressed', `You pressed: ${title}`);
+    onPress();
+  }, [title, onPress]);
   
   return (
-    <Pressable
+    <View
       style={[
         buttonStyles.button,
         variant === 'secondary' && buttonStyles.secondary,
-        isHovered && buttonStyles.hovered,
         isPressed && buttonStyles.pressed,
       ]}
-      onPress={onPress}
-      onPressIn={() => setIsPressed(true)}
-      onPressOut={() => setIsPressed(false)}
-      onHoverIn={() => setIsHovered(true)}
-      onHoverOut={() => setIsHovered(false)}
+      onStartShouldSetResponder={() => true}
+      onResponderGrant={() => {
+        console.log('Responder granted for button:', title);
+        setIsPressed(true);
+      }}
+      onResponderRelease={() => {
+        console.log('Responder released for button:', title);
+        setIsPressed(false);
+        handlePress();
+      }}
+      onResponderTerminate={() => setIsPressed(false)}
+      // @ts-ignore - macOS specific
+      onClick={handlePress}
     >
       <Text style={[
         buttonStyles.text,
@@ -89,7 +102,7 @@ const Button: React.FC<{
       ]}>
         {title}
       </Text>
-    </Pressable>
+    </View>
   );
 };
 
@@ -441,16 +454,20 @@ const App: React.FC = () => {
       {/* Tab Bar */}
       <View style={styles.tabBar}>
         {tabs.map((tab) => (
-          <Pressable
+          <View
             key={tab.name}
-            style={({ pressed, hovered }) => [
+            style={[
               styles.tab,
               selectedTab === tab.name && styles.tabActive,
-              hovered && styles.tabHovered,
-              pressed && styles.tabPressed,
             ]}
-            onPress={() => {
-              console.log('Tab pressed:', tab.name);
+            onStartShouldSetResponder={() => true}
+            onResponderRelease={() => {
+              console.log('Tab selected:', tab.name);
+              setSelectedTab(tab.name);
+            }}
+            // @ts-ignore - macOS specific onClick handler
+            onClick={() => {
+              console.log('Tab clicked:', tab.name);
               setSelectedTab(tab.name);
             }}
           >
@@ -462,7 +479,7 @@ const App: React.FC = () => {
               {tab.label}
             </Text>
             {selectedTab === tab.name && <View style={styles.tabIndicator} />}
-          </Pressable>
+          </View>
         ))}
       </View>
     </View>
@@ -507,15 +524,13 @@ const styles = StyleSheet.create({
   tab: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     position: 'relative',
     cursor: 'pointer',
+    borderRadius: 8,
   },
-  tabActive: {},
-  tabHovered: {
-    backgroundColor: 'rgba(0, 122, 255, 0.05)',
-  },
-  tabPressed: {
+  tabActive: {
     backgroundColor: 'rgba(0, 122, 255, 0.1)',
   },
   tabIcon: {
