@@ -951,17 +951,19 @@ const DashboardView: React.FC = () => {
       progress += 10;
       if (progress >= 100) {
         clearInterval(interval);
+        const results = [
+          { category: 'System Caches', size: 1.2 * 1024 * 1024 * 1024, count: 234, path: '~/Library/Caches' },
+          { category: 'User Logs', size: 450 * 1024 * 1024, count: 89, path: '~/Library/Logs' },
+          { category: 'Xcode Derived Data', size: 3.5 * 1024 * 1024 * 1024, count: 12, path: '~/Library/Developer/Xcode/DerivedData' },
+          { category: 'NPM Cache', size: 890 * 1024 * 1024, count: 1456, path: '~/.npm' },
+          { category: 'Homebrew Cache', size: 670 * 1024 * 1024, count: 45, path: '~/Library/Caches/Homebrew' },
+        ];
         setState({
           isScanning: false,
           scanProgress: 100,
           scanStatus: 'Scan complete!',
-          scanResults: [
-            { category: 'System Caches', size: 1.2 * 1024 * 1024 * 1024, count: 234, path: '~/Library/Caches' },
-            { category: 'User Logs', size: 450 * 1024 * 1024, count: 89, path: '~/Library/Logs' },
-            { category: 'Xcode Derived Data', size: 3.5 * 1024 * 1024 * 1024, count: 12, path: '~/Library/Developer/Xcode/DerivedData' },
-            { category: 'NPM Cache', size: 890 * 1024 * 1024, count: 1456, path: '~/.npm' },
-            { category: 'Homebrew Cache', size: 670 * 1024 * 1024, count: 45, path: '~/Library/Caches/Homebrew' },
-          ],
+          scanResults: results,
+          cleanupItems: results.map(r => ({ ...r, selected: true })), // All selected by default
         });
         showToast('success', 'Scan Complete', 'Found 6.7 GB of cleanable files!');
       } else {
@@ -1025,34 +1027,123 @@ const DashboardView: React.FC = () => {
       </Card>
 
       {state.scanResults.length > 0 && (
-        <Card title="Scan Results" icon="📋">
-          {state.scanResults.map((result) => (
-            <View key={result.category} style={viewStyles.categoryItem}>
-              <View>
-                <Text style={viewStyles.categoryName}>{result.category}</Text>
-                <Text style={viewStyles.categoryPath}>{result.path}</Text>
-              </View>
-              <Text style={viewStyles.categorySize}>{formatSize(result.size)}</Text>
+        <Card title="Scan Results" subtitle={`${state.scanResults.length} categories found`} icon="📋">
+          {/* Select All Row */}
+          <View
+            style={viewStyles.selectAllRow}
+            onStartShouldSetResponder={() => true}
+            onResponderRelease={() => {
+              const allSelected = state.cleanupItems.length === state.scanResults.length && 
+                state.cleanupItems.every(item => item.selected);
+              const newItems: CleanupItem[] = state.scanResults.map(r => ({
+                category: r.category,
+                size: r.size,
+                count: r.count,
+                path: r.path,
+                selected: !allSelected,
+              }));
+              setState({ cleanupItems: newItems });
+            }}
+            // @ts-ignore
+            onClick={() => {
+              const allSelected = state.cleanupItems.length === state.scanResults.length && 
+                state.cleanupItems.every(item => item.selected);
+              const newItems: CleanupItem[] = state.scanResults.map(r => ({
+                category: r.category,
+                size: r.size,
+                count: r.count,
+                path: r.path,
+                selected: !allSelected,
+              }));
+              setState({ cleanupItems: newItems });
+            }}
+          >
+            <View style={[
+              viewStyles.checkbox,
+              state.cleanupItems.length === state.scanResults.length && 
+              state.cleanupItems.every(item => item.selected) && viewStyles.checkboxChecked,
+            ]}>
+              {state.cleanupItems.length === state.scanResults.length && 
+               state.cleanupItems.every(item => item.selected) && (
+                <Text style={viewStyles.checkmark}>✓</Text>
+              )}
             </View>
-          ))}
-          <View style={[viewStyles.buttonRow, { marginTop: 16 }]}>
+            <Text style={viewStyles.selectAllText}>Select All</Text>
+          </View>
+
+          {/* File List */}
+          {state.scanResults.map((result) => {
+            const isSelected = state.cleanupItems.find(i => i.category === result.category)?.selected ?? false;
+            
+            return (
+              <View key={result.category} style={viewStyles.fileListItem}>
+                <View
+                  style={viewStyles.fileListLeft}
+                  onStartShouldSetResponder={() => true}
+                  onResponderRelease={() => {
+                    const existingItems = state.cleanupItems.length > 0 ? state.cleanupItems : 
+                      state.scanResults.map(r => ({ ...r, selected: false }));
+                    const newItems = existingItems.map(item =>
+                      item.category === result.category ? { ...item, selected: !item.selected } : item
+                    );
+                    setState({ cleanupItems: newItems });
+                  }}
+                  // @ts-ignore
+                  onClick={() => {
+                    const existingItems = state.cleanupItems.length > 0 ? state.cleanupItems : 
+                      state.scanResults.map(r => ({ ...r, selected: false }));
+                    const newItems = existingItems.map(item =>
+                      item.category === result.category ? { ...item, selected: !item.selected } : item
+                    );
+                    setState({ cleanupItems: newItems });
+                  }}
+                >
+                  <View style={[viewStyles.checkbox, isSelected && viewStyles.checkboxChecked]}>
+                    {isSelected && <Text style={viewStyles.checkmark}>✓</Text>}
+                  </View>
+                  <View style={viewStyles.fileListInfo}>
+                    <Text style={viewStyles.categoryName}>{result.category}</Text>
+                    <Text style={viewStyles.categoryPath}>{result.path}</Text>
+                    <Text style={viewStyles.categoryCount}>{result.count} files</Text>
+                  </View>
+                </View>
+                <View style={viewStyles.fileListRight}>
+                  <Text style={viewStyles.categorySize}>{formatSize(result.size)}</Text>
+                  <View
+                    style={viewStyles.finderButton}
+                    onStartShouldSetResponder={() => true}
+                    onResponderRelease={() => openInFinder(result.path)}
+                    // @ts-ignore
+                    onClick={() => openInFinder(result.path)}
+                  >
+                    <Text style={viewStyles.finderButtonText}>📂</Text>
+                  </View>
+                </View>
+              </View>
+            );
+          })}
+
+          {/* Summary and Actions */}
+          <View style={viewStyles.summaryRow}>
+            <Text style={viewStyles.summaryText}>
+              {state.cleanupItems.filter(i => i.selected).length} of {state.scanResults.length} selected
+              {' · '}
+              {formatSize(state.cleanupItems.filter(i => i.selected).reduce((sum, i) => sum + i.size, 0))}
+            </Text>
+          </View>
+          
+          <View style={[viewStyles.buttonRow, { marginTop: 16, gap: 12 }]}>
             <Button 
               title="Clean Selected" 
               variant="danger"
               icon="🗑️"
+              disabled={state.cleanupItems.filter(i => i.selected).length === 0}
               onPress={() => {
-                // Prepare cleanup items with paths
-                const cleanupItems: CleanupItem[] = state.scanResults.map(r => ({
-                  category: r.category,
-                  size: r.size,
-                  count: r.count,
-                  path: r.path,
-                  selected: true, // All selected by default
-                }));
-                setState({
-                  showCleanupModal: true,
-                  cleanupItems,
-                });
+                if (state.cleanupItems.filter(i => i.selected).length === 0) {
+                  showToast('warning', 'No Items Selected', 'Please select items to clean');
+                  return;
+                }
+                setState({ showCleanupModal: true });
               }} 
             />
           </View>
@@ -1107,20 +1198,22 @@ const ScannerView: React.FC = () => {
       
       if (progress >= 100) {
         clearInterval(interval);
+        const results = [
+          { category: 'System Caches', size: 1.8 * 1024 * 1024 * 1024, count: 345, path: '~/Library/Caches' },
+          { category: 'User Logs', size: 650 * 1024 * 1024, count: 123, path: '~/Library/Logs' },
+          { category: 'Xcode Derived Data', size: 5.2 * 1024 * 1024 * 1024, count: 24, path: '~/Library/Developer/Xcode/DerivedData' },
+          { category: 'NPM Cache', size: 1.1 * 1024 * 1024 * 1024, count: 2341, path: '~/.npm' },
+          { category: 'Homebrew Cache', size: 890 * 1024 * 1024, count: 67, path: '~/Library/Caches/Homebrew' },
+          { category: 'Browser Caches', size: 780 * 1024 * 1024, count: 89, path: '~/Library/Caches/Google/Chrome' },
+          { category: 'Temporary Files', size: 340 * 1024 * 1024, count: 456, path: '/tmp' },
+          { category: 'Old Downloads', size: 2.3 * 1024 * 1024 * 1024, count: 34, path: '~/Downloads' },
+        ];
         setState({
           isScanning: false,
           scanProgress: 100,
           scanStatus: 'Full scan complete!',
-          scanResults: [
-            { category: 'System Caches', size: 1.8 * 1024 * 1024 * 1024, count: 345, path: '~/Library/Caches' },
-            { category: 'User Logs', size: 650 * 1024 * 1024, count: 123, path: '~/Library/Logs' },
-            { category: 'Xcode Derived Data', size: 5.2 * 1024 * 1024 * 1024, count: 24, path: '~/Library/Developer/Xcode/DerivedData' },
-            { category: 'NPM Cache', size: 1.1 * 1024 * 1024 * 1024, count: 2341, path: '~/.npm' },
-            { category: 'Homebrew Cache', size: 890 * 1024 * 1024, count: 67, path: '~/Library/Caches/Homebrew' },
-            { category: 'Browser Caches', size: 780 * 1024 * 1024, count: 89, path: '~/Library/Caches/Google/Chrome' },
-            { category: 'Temporary Files', size: 340 * 1024 * 1024, count: 456, path: '/tmp' },
-            { category: 'Old Downloads', size: 2.3 * 1024 * 1024 * 1024, count: 34, path: '~/Downloads' },
-          ],
+          scanResults: results,
+          cleanupItems: results.map(r => ({ ...r, selected: true })), // All selected by default
         });
         showToast('success', 'Full Scan Complete', 'Found 13.1 GB of cleanable files!');
       } else {
@@ -1156,22 +1249,91 @@ const ScannerView: React.FC = () => {
         </View>
       </Card>
       
-      <Card title="Cleanup Categories">
+      <Card title="Cleanup Categories" subtitle={state.scanResults.length > 0 ? `${state.scanResults.length} found` : 'Run a scan to analyze'}>
         {state.scanResults.length > 0 ? (
-          state.scanResults.map((result) => (
-            <View key={result.category} style={viewStyles.categoryItem}>
-              <View>
-                <Text style={viewStyles.categoryName}>{result.category}</Text>
-                <Text style={viewStyles.categoryCount}>{result.count} files</Text>
+          <>
+            {/* Select All */}
+            <View
+              style={viewStyles.selectAllRow}
+              onStartShouldSetResponder={() => true}
+              onResponderRelease={() => {
+                const allSelected = state.cleanupItems.every(item => item.selected);
+                setState({
+                  cleanupItems: state.cleanupItems.map(item => ({ ...item, selected: !allSelected })),
+                });
+              }}
+              // @ts-ignore
+              onClick={() => {
+                const allSelected = state.cleanupItems.every(item => item.selected);
+                setState({
+                  cleanupItems: state.cleanupItems.map(item => ({ ...item, selected: !allSelected })),
+                });
+              }}
+            >
+              <View style={[
+                viewStyles.checkbox,
+                state.cleanupItems.every(item => item.selected) && viewStyles.checkboxChecked,
+              ]}>
+                {state.cleanupItems.every(item => item.selected) && (
+                  <Text style={viewStyles.checkmark}>✓</Text>
+                )}
               </View>
-              <Text style={viewStyles.categorySize}>{formatSize(result.size)}</Text>
+              <Text style={viewStyles.selectAllText}>Select All</Text>
             </View>
-          ))
+            
+            {state.scanResults.map((result) => {
+              const isSelected = state.cleanupItems.find(i => i.category === result.category)?.selected ?? false;
+              return (
+                <View key={result.category} style={viewStyles.fileListItem}>
+                  <View
+                    style={viewStyles.fileListLeft}
+                    onStartShouldSetResponder={() => true}
+                    onResponderRelease={() => {
+                      setState({
+                        cleanupItems: state.cleanupItems.map(item =>
+                          item.category === result.category ? { ...item, selected: !item.selected } : item
+                        ),
+                      });
+                    }}
+                    // @ts-ignore
+                    onClick={() => {
+                      setState({
+                        cleanupItems: state.cleanupItems.map(item =>
+                          item.category === result.category ? { ...item, selected: !item.selected } : item
+                        ),
+                      });
+                    }}
+                  >
+                    <View style={[viewStyles.checkbox, isSelected && viewStyles.checkboxChecked]}>
+                      {isSelected && <Text style={viewStyles.checkmark}>✓</Text>}
+                    </View>
+                    <View style={viewStyles.fileListInfo}>
+                      <Text style={viewStyles.categoryName}>{result.category}</Text>
+                      <Text style={viewStyles.categoryPath}>{result.path}</Text>
+                      <Text style={viewStyles.categoryCount}>{result.count} files</Text>
+                    </View>
+                  </View>
+                  <View style={viewStyles.fileListRight}>
+                    <Text style={viewStyles.categorySize}>{formatSize(result.size)}</Text>
+                    <View
+                      style={viewStyles.finderButton}
+                      onStartShouldSetResponder={() => true}
+                      onResponderRelease={() => openInFinder(result.path)}
+                      // @ts-ignore
+                      onClick={() => openInFinder(result.path)}
+                    >
+                      <Text style={viewStyles.finderButtonText}>📂</Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+          </>
         ) : (
           ['System Caches', 'User Logs', 'Xcode Derived Data', 'NPM Cache', 'Homebrew Cache'].map((category) => (
             <View key={category} style={viewStyles.categoryItem}>
               <Text style={viewStyles.categoryName}>{category}</Text>
-              <Text style={viewStyles.categorySize}>--</Text>
+              <Text style={[viewStyles.categorySize, { color: COLORS.textMuted }]}>--</Text>
             </View>
           ))
         )}
@@ -1179,28 +1341,28 @@ const ScannerView: React.FC = () => {
       
       {state.scanResults.length > 0 && (
         <Card title="Actions" icon="⚡">
-          <Text style={viewStyles.description}>
-            Review and confirm the files you want to delete.
-          </Text>
-          <View style={viewStyles.buttonRow}>
+          {/* Summary */}
+          <View style={viewStyles.summaryRow}>
+            <Text style={viewStyles.summaryText}>
+              {state.cleanupItems.filter(i => i.selected).length} of {state.scanResults.length} selected
+              {' · '}
+              {formatSize(state.cleanupItems.filter(i => i.selected).reduce((sum, i) => sum + i.size, 0))}
+            </Text>
+          </View>
+          
+          <View style={[viewStyles.buttonRow, { marginTop: 16 }]}>
             <Button 
-              title="Clean All" 
+              title="Clean Selected" 
               variant="danger"
               icon="🗑️"
               size="large"
+              disabled={state.cleanupItems.filter(i => i.selected).length === 0}
               onPress={() => {
-                // Prepare cleanup items with paths
-                const cleanupItems: CleanupItem[] = state.scanResults.map(r => ({
-                  category: r.category,
-                  size: r.size,
-                  count: r.count,
-                  path: r.path,
-                  selected: true, // All selected by default
-                }));
-                setState({
-                  showCleanupModal: true,
-                  cleanupItems,
-                });
+                if (state.cleanupItems.filter(i => i.selected).length === 0) {
+                  showToast('warning', 'No Items Selected', 'Please select items to clean');
+                  return;
+                }
+                setState({ showCleanupModal: true });
               }} 
             />
           </View>
@@ -1494,6 +1656,86 @@ const viewStyles = StyleSheet.create({
     color: COLORS.textMuted,
     marginTop: 3,
     fontFamily: Platform.OS === 'macos' ? 'Menlo' : 'monospace',
+  },
+  selectAllRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    marginBottom: 8,
+    backgroundColor: COLORS.backgroundAlt,
+    borderRadius: 8,
+    cursor: 'pointer',
+  },
+  selectAllText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+  },
+  checkboxChecked: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  checkmark: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  fileListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+  },
+  fileListLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    cursor: 'pointer',
+  },
+  fileListInfo: {
+    flex: 1,
+  },
+  fileListRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  finderButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: COLORS.backgroundAlt,
+    justifyContent: 'center',
+    alignItems: 'center',
+    cursor: 'pointer',
+  },
+  finderButtonText: {
+    fontSize: 16,
+  },
+  summaryRow: {
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  summaryText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
   },
   scanProgress: {
     marginVertical: 12,
