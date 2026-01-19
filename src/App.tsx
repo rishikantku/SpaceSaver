@@ -5,14 +5,15 @@
  * Built with React Native for Apple Silicon M2
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
   useColorScheme,
+  Platform,
 } from 'react-native';
 
 // Inline simple components to avoid import issues
@@ -59,28 +60,38 @@ const cardStyles = StyleSheet.create({
   },
 });
 
-// Simple Button Component
+// Simple Button Component - Using Pressable for macOS compatibility
 const Button: React.FC<{
   title: string;
   onPress: () => void;
   variant?: 'primary' | 'secondary';
-}> = ({ title, onPress, variant = 'primary' }) => (
-  <TouchableOpacity
-    style={[
-      buttonStyles.button,
-      variant === 'secondary' && buttonStyles.secondary,
-    ]}
-    onPress={onPress}
-    activeOpacity={0.7}
-  >
-    <Text style={[
-      buttonStyles.text,
-      variant === 'secondary' && buttonStyles.secondaryText,
-    ]}>
-      {title}
-    </Text>
-  </TouchableOpacity>
-);
+}> = ({ title, onPress, variant = 'primary' }) => {
+  const [isPressed, setIsPressed] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  
+  return (
+    <Pressable
+      style={[
+        buttonStyles.button,
+        variant === 'secondary' && buttonStyles.secondary,
+        isHovered && buttonStyles.hovered,
+        isPressed && buttonStyles.pressed,
+      ]}
+      onPress={onPress}
+      onPressIn={() => setIsPressed(true)}
+      onPressOut={() => setIsPressed(false)}
+      onHoverIn={() => setIsHovered(true)}
+      onHoverOut={() => setIsHovered(false)}
+    >
+      <Text style={[
+        buttonStyles.text,
+        variant === 'secondary' && buttonStyles.secondaryText,
+      ]}>
+        {title}
+      </Text>
+    </Pressable>
+  );
+};
 
 const buttonStyles = StyleSheet.create({
   button: {
@@ -89,11 +100,19 @@ const buttonStyles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 8,
     alignItems: 'center',
+    cursor: 'pointer',
   },
   secondary: {
     backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: COLORS.primary,
+  },
+  hovered: {
+    opacity: 0.8,
+  },
+  pressed: {
+    opacity: 0.6,
+    transform: [{ scale: 0.98 }],
   },
   text: {
     color: '#FFFFFF',
@@ -422,14 +441,18 @@ const App: React.FC = () => {
       {/* Tab Bar */}
       <View style={styles.tabBar}>
         {tabs.map((tab) => (
-          <TouchableOpacity
+          <Pressable
             key={tab.name}
-            style={[
+            style={({ pressed, hovered }) => [
               styles.tab,
               selectedTab === tab.name && styles.tabActive,
+              hovered && styles.tabHovered,
+              pressed && styles.tabPressed,
             ]}
-            onPress={() => setSelectedTab(tab.name)}
-            activeOpacity={0.7}
+            onPress={() => {
+              console.log('Tab pressed:', tab.name);
+              setSelectedTab(tab.name);
+            }}
           >
             <Text style={styles.tabIcon}>{tab.icon}</Text>
             <Text style={[
@@ -439,7 +462,7 @@ const App: React.FC = () => {
               {tab.label}
             </Text>
             {selectedTab === tab.name && <View style={styles.tabIndicator} />}
-          </TouchableOpacity>
+          </Pressable>
         ))}
       </View>
     </View>
@@ -486,8 +509,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     position: 'relative',
+    cursor: 'pointer',
   },
   tabActive: {},
+  tabHovered: {
+    backgroundColor: 'rgba(0, 122, 255, 0.05)',
+  },
+  tabPressed: {
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+  },
   tabIcon: {
     fontSize: 22,
     marginBottom: 2,
