@@ -11,33 +11,71 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableWithoutFeedback,
+  Modal,
   useColorScheme,
-  Alert,
   Platform,
 } from 'react-native';
 
-// Color constants
+// Professional Color Palette
 const COLORS = {
-  primary: '#007AFF',
-  success: '#34C759',
-  warning: '#FF9500',
-  danger: '#FF3B30',
-  background: '#F5F5F7',
+  // Primary colors
+  primary: '#4F46E5',      // Indigo
+  primaryLight: '#818CF8',
+  primaryDark: '#3730A3',
+  
+  // Status colors
+  success: '#10B981',      // Emerald
+  successLight: '#D1FAE5',
+  warning: '#F59E0B',      // Amber
+  warningLight: '#FEF3C7',
+  danger: '#EF4444',       // Red
+  dangerLight: '#FEE2E2',
+  info: '#3B82F6',         // Blue
+  infoLight: '#DBEAFE',
+  
+  // Neutral colors
+  background: '#F8FAFC',   // Slate 50
+  backgroundAlt: '#F1F5F9', // Slate 100
   card: '#FFFFFF',
-  text: '#000000',
-  textSecondary: '#666666',
-  border: '#E5E5E7',
+  cardHover: '#F8FAFC',
+  
+  // Text colors
+  text: '#0F172A',         // Slate 900
+  textSecondary: '#64748B', // Slate 500
+  textMuted: '#94A3B8',    // Slate 400
+  
+  // Border colors
+  border: '#E2E8F0',       // Slate 200
+  borderLight: '#F1F5F9',  // Slate 100
+  
+  // Gradients
+  gradientStart: '#4F46E5',
+  gradientEnd: '#7C3AED',
 } as const;
 
-// Simple Card Component
+// Professional Card Component
 const Card: React.FC<{ 
   children: React.ReactNode; 
   title?: string;
+  subtitle?: string;
+  icon?: string;
   style?: object;
-}> = ({ children, title, style }) => (
-  <View style={[cardStyles.container, style]}>
-    {title && <Text style={cardStyles.title}>{title}</Text>}
+  variant?: 'default' | 'gradient' | 'outlined';
+}> = ({ children, title, subtitle, icon, style, variant = 'default' }) => (
+  <View style={[
+    cardStyles.container, 
+    variant === 'outlined' && cardStyles.outlined,
+    style
+  ]}>
+    {(title || icon) && (
+      <View style={cardStyles.header}>
+        {icon && <Text style={cardStyles.icon}>{icon}</Text>}
+        <View style={cardStyles.headerText}>
+          {title && <Text style={cardStyles.title}>{title}</Text>}
+          {subtitle && <Text style={cardStyles.subtitle}>{subtitle}</Text>}
+        </View>
+      </View>
+    )}
     {children}
   </View>
 );
@@ -45,60 +83,117 @@ const Card: React.FC<{
 const cardStyles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.card,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+  },
+  outlined: {
+    backgroundColor: 'transparent',
+    borderColor: COLORS.border,
+    shadowOpacity: 0,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  icon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  headerText: {
+    flex: 1,
   },
   title: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
-    marginBottom: 12,
     color: COLORS.text,
+    letterSpacing: -0.4,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
 });
 
-// Simple Button Component - Using View with responder for macOS compatibility
+// Professional Button Component
 const Button: React.FC<{
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary';
-}> = ({ title, onPress, variant = 'primary' }) => {
+  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'ghost';
+  size?: 'small' | 'medium' | 'large';
+  icon?: string;
+  fullWidth?: boolean;
+  disabled?: boolean;
+}> = ({ title, onPress, variant = 'primary', size = 'medium', icon, fullWidth, disabled }) => {
   const [isPressed, setIsPressed] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   
-  const handlePress = useCallback(() => {
-    console.log('Button pressed:', title);
-    Alert.alert('Button Pressed', `You pressed: ${title}`);
-    onPress();
-  }, [title, onPress]);
+  const getBackgroundColor = () => {
+    if (disabled) return COLORS.border;
+    switch (variant) {
+      case 'primary': return COLORS.primary;
+      case 'success': return COLORS.success;
+      case 'danger': return COLORS.danger;
+      case 'secondary': return COLORS.backgroundAlt;
+      case 'ghost': return 'transparent';
+      default: return COLORS.primary;
+    }
+  };
+  
+  const getTextColor = () => {
+    if (disabled) return COLORS.textMuted;
+    switch (variant) {
+      case 'secondary': return COLORS.text;
+      case 'ghost': return COLORS.primary;
+      default: return '#FFFFFF';
+    }
+  };
+  
+  const getPadding = () => {
+    switch (size) {
+      case 'small': return { paddingVertical: 8, paddingHorizontal: 16 };
+      case 'large': return { paddingVertical: 16, paddingHorizontal: 32 };
+      default: return { paddingVertical: 12, paddingHorizontal: 24 };
+    }
+  };
   
   return (
     <View
       style={[
         buttonStyles.button,
-        variant === 'secondary' && buttonStyles.secondary,
-        isPressed && buttonStyles.pressed,
+        { backgroundColor: getBackgroundColor() },
+        getPadding(),
+        fullWidth && buttonStyles.fullWidth,
+        isHovered && !disabled && buttonStyles.hovered,
+        isPressed && !disabled && buttonStyles.pressed,
       ]}
-      onStartShouldSetResponder={() => true}
-      onResponderGrant={() => {
-        console.log('Responder granted for button:', title);
-        setIsPressed(true);
-      }}
+      onStartShouldSetResponder={() => !disabled}
+      onResponderGrant={() => setIsPressed(true)}
       onResponderRelease={() => {
-        console.log('Responder released for button:', title);
         setIsPressed(false);
-        handlePress();
+        if (!disabled) onPress();
       }}
       onResponderTerminate={() => setIsPressed(false)}
-      // @ts-ignore - macOS specific
-      onClick={handlePress}
+      // @ts-ignore - macOS hover events
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      // @ts-ignore - macOS click
+      onClick={() => !disabled && onPress()}
     >
+      {icon && <Text style={[buttonStyles.icon, { color: getTextColor() }]}>{icon}</Text>}
       <Text style={[
         buttonStyles.text,
-        variant === 'secondary' && buttonStyles.secondaryText,
+        { color: getTextColor() },
+        size === 'small' && buttonStyles.textSmall,
+        size === 'large' && buttonStyles.textLarge,
       ]}>
         {title}
       </Text>
@@ -108,32 +203,37 @@ const Button: React.FC<{
 
 const buttonStyles = StyleSheet.create({
   button: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
     cursor: 'pointer',
+    gap: 8,
   },
-  secondary: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: COLORS.primary,
+  fullWidth: {
+    width: '100%',
   },
   hovered: {
-    opacity: 0.8,
+    opacity: 0.9,
+    transform: [{ scale: 1.02 }],
   },
   pressed: {
-    opacity: 0.6,
+    opacity: 0.8,
     transform: [{ scale: 0.98 }],
   },
-  text: {
-    color: '#FFFFFF',
+  icon: {
     fontSize: 16,
-    fontWeight: '600',
   },
-  secondaryText: {
-    color: COLORS.primary,
+  text: {
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: -0.3,
+  },
+  textSmall: {
+    fontSize: 13,
+  },
+  textLarge: {
+    fontSize: 17,
   },
 });
 
@@ -154,6 +254,14 @@ const tabs: Tab[] = [
   { name: 'settings', label: 'Settings', icon: '⚙️' },
 ];
 
+// Toast notification type
+interface Toast {
+  id: string;
+  type: 'success' | 'info' | 'warning' | 'error';
+  title: string;
+  message?: string;
+}
+
 // App State Interface
 interface AppState {
   isScanning: boolean;
@@ -166,6 +274,8 @@ interface AppState {
   autoModeEnabled: boolean;
   scanResults: Array<{ category: string; size: number; count: number }>;
   scannedApps: Array<{ name: string; size: number; lastUsed: string }>;
+  toasts: Toast[];
+  showQuitModal: boolean;
 }
 
 // Format bytes to human readable
@@ -189,9 +299,209 @@ let globalState: AppState = {
   autoModeEnabled: false,
   scanResults: [],
   scannedApps: [],
+  toasts: [],
+  showQuitModal: false,
 };
 
 let stateListeners: Array<() => void> = [];
+
+// Toast helper function
+const showToast = (type: Toast['type'], title: string, message?: string) => {
+  const id = Date.now().toString();
+  globalState = {
+    ...globalState,
+    toasts: [...globalState.toasts, { id, type, title, message }],
+  };
+  stateListeners.forEach(l => l());
+  
+  // Auto-dismiss after 3 seconds
+  setTimeout(() => {
+    globalState = {
+      ...globalState,
+      toasts: globalState.toasts.filter(t => t.id !== id),
+    };
+    stateListeners.forEach(l => l());
+  }, 3000);
+};
+
+// Toast Component
+const ToastContainer: React.FC = () => {
+  const { state } = useAppState();
+  
+  if (state.toasts.length === 0) return null;
+  
+  return (
+    <View style={toastStyles.container}>
+      {state.toasts.map(toast => (
+        <View 
+          key={toast.id} 
+          style={[
+            toastStyles.toast,
+            toast.type === 'success' && toastStyles.success,
+            toast.type === 'error' && toastStyles.error,
+            toast.type === 'warning' && toastStyles.warning,
+          ]}
+        >
+          <Text style={toastStyles.icon}>
+            {toast.type === 'success' ? '✓' : toast.type === 'error' ? '✕' : toast.type === 'warning' ? '!' : 'ℹ'}
+          </Text>
+          <View style={toastStyles.content}>
+            <Text style={toastStyles.title}>{toast.title}</Text>
+            {toast.message && <Text style={toastStyles.message}>{toast.message}</Text>}
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+};
+
+const toastStyles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    top: 80,
+    right: 20,
+    zIndex: 1000,
+    gap: 8,
+  },
+  toast: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.info,
+    minWidth: 280,
+    maxWidth: 400,
+  },
+  success: {
+    borderLeftColor: COLORS.success,
+  },
+  error: {
+    borderLeftColor: COLORS.danger,
+  },
+  warning: {
+    borderLeftColor: COLORS.warning,
+  },
+  icon: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.success,
+    marginRight: 12,
+    width: 24,
+    textAlign: 'center',
+  },
+  content: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  message: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+});
+
+// Quit Confirmation Modal
+const QuitModal: React.FC = () => {
+  const { state, setState } = useAppState();
+  
+  if (!state.showQuitModal) return null;
+  
+  return (
+    <Modal
+      visible={state.showQuitModal}
+      transparent
+      animationType="fade"
+    >
+      <View style={modalStyles.overlay}>
+        <View style={modalStyles.container}>
+          <View style={modalStyles.iconContainer}>
+            <Text style={modalStyles.icon}>👋</Text>
+          </View>
+          <Text style={modalStyles.title}>Quit SpaceSaver?</Text>
+          <Text style={modalStyles.message}>
+            Are you sure you want to quit the application? Any ongoing scans will be cancelled.
+          </Text>
+          <View style={modalStyles.buttons}>
+            <Button
+              title="Cancel"
+              variant="secondary"
+              onPress={() => setState({ showQuitModal: false })}
+            />
+            <Button
+              title="Quit"
+              variant="danger"
+              onPress={() => {
+                // In a real app, this would close the app
+                console.log('Quitting application...');
+                setState({ showQuitModal: false });
+              }}
+            />
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+const modalStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  container: {
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: 32,
+    width: 400,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.25,
+    shadowRadius: 40,
+  },
+  iconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: COLORS.warningLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  icon: {
+    fontSize: 32,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+  message: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  buttons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+});
 
 const useAppState = () => {
   const [, forceUpdate] = useState({});
@@ -239,7 +549,7 @@ const DashboardView: React.FC = () => {
             { category: 'Homebrew Cache', size: 670 * 1024 * 1024, count: 45 },
           ],
         });
-        Alert.alert('Scan Complete', 'Found 6.7 GB of cleanable files!');
+        showToast('success', 'Scan Complete', 'Found 6.7 GB of cleanable files!');
       } else {
         setState({
           scanProgress: progress,
@@ -318,7 +628,7 @@ const DashboardView: React.FC = () => {
                   totalSaved: state.totalSaved + totalSize,
                   scanResults: [],
                 });
-                Alert.alert('Cleanup Complete', `Freed ${formatSize(totalSize)} of disk space!`);
+                showToast('success', 'Cleanup Complete', `Freed ${formatSize(totalSize)} of disk space!`);
               }} 
             />
           </View>
@@ -336,10 +646,7 @@ const DashboardView: React.FC = () => {
             variant="secondary"
             onPress={() => {
               setState({ autoModeEnabled: !state.autoModeEnabled });
-              Alert.alert(
-                'Auto Mode',
-                state.autoModeEnabled ? 'Auto Mode disabled' : 'Auto Mode enabled'
-              );
+              showToast('info', 'Auto Mode', state.autoModeEnabled ? 'Auto Mode disabled' : 'Auto Mode enabled');
             }}
           />
         </View>
@@ -391,7 +698,7 @@ const ScannerView: React.FC = () => {
             { category: 'Old Downloads', size: 2.3 * 1024 * 1024 * 1024, count: 34 },
           ],
         });
-        Alert.alert('Full Scan Complete', 'Found 13.1 GB of cleanable files!');
+        showToast('success', 'Full Scan Complete', 'Found 13.1 GB of cleanable files!');
       } else {
         setState({
           scanProgress: progress,
@@ -458,7 +765,7 @@ const ScannerView: React.FC = () => {
                   totalSaved: state.totalSaved + totalSize,
                   scanResults: [],
                 });
-                Alert.alert('Cleanup Complete', `Freed ${formatSize(totalSize)} of disk space!`);
+                showToast('success', 'Cleanup Complete', `Freed ${formatSize(totalSize)} of disk space!`);
               }} 
             />
           </View>
@@ -494,7 +801,7 @@ const AppsView: React.FC = () => {
             { name: 'Zoom', size: 210 * 1024 * 1024, lastUsed: '1 month ago' },
           ],
         });
-        Alert.alert('Scan Complete', 'Found 6 applications');
+        showToast('success', 'Scan Complete', 'Found 6 applications');
       } else {
         setState({
           scanProgress: progress,
@@ -628,67 +935,81 @@ const SettingsView: React.FC = () => {
 const viewStyles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: 20,
   },
   diskInfo: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
+    paddingVertical: 16,
   },
   diskEmoji: {
-    fontSize: 48,
-    marginBottom: 8,
+    fontSize: 56,
+    marginBottom: 12,
   },
   diskUsage: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '700',
     color: COLORS.text,
+    letterSpacing: -0.5,
   },
   diskPercent: {
-    fontSize: 14,
+    fontSize: 15,
     color: COLORS.textSecondary,
-    marginTop: 4,
+    marginTop: 6,
+    fontWeight: '500',
   },
   progressBar: {
-    height: 8,
+    height: 10,
     backgroundColor: COLORS.border,
-    borderRadius: 4,
-    marginBottom: 16,
+    borderRadius: 5,
+    marginBottom: 20,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     backgroundColor: COLORS.primary,
-    borderRadius: 4,
+    borderRadius: 5,
   },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 8,
+    marginTop: 12,
+    gap: 12,
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    paddingVertical: 8,
   },
   statItem: {
     alignItems: 'center',
+    flex: 1,
+    padding: 12,
+    backgroundColor: COLORS.backgroundAlt,
+    borderRadius: 12,
+    marginHorizontal: 4,
   },
   statEmoji: {
-    fontSize: 24,
-    marginBottom: 4,
+    fontSize: 28,
+    marginBottom: 8,
   },
   statValue: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: COLORS.text,
+    letterSpacing: -0.3,
   },
   statLabel: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: COLORS.textMuted,
+    marginTop: 4,
+    fontWeight: '500',
   },
   autoModeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 8,
   },
   autoModeTitle: {
     fontSize: 16,
@@ -696,29 +1017,32 @@ const viewStyles = StyleSheet.create({
     color: COLORS.text,
   },
   autoModeSubtitle: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginTop: 2,
+    fontSize: 13,
+    color: COLORS.textMuted,
+    marginTop: 4,
   },
   autoModeStatus: {
     fontSize: 14,
     color: COLORS.textSecondary,
   },
   description: {
-    fontSize: 14,
+    fontSize: 15,
     color: COLORS.textSecondary,
-    marginBottom: 8,
+    marginBottom: 12,
+    lineHeight: 22,
   },
   categoryItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 12,
+    alignItems: 'center',
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: COLORS.borderLight,
   },
   categoryName: {
-    fontSize: 14,
+    fontSize: 15,
     color: COLORS.text,
+    fontWeight: '500',
   },
   categorySize: {
     fontSize: 14,
@@ -827,6 +1151,11 @@ const viewStyles = StyleSheet.create({
 const App: React.FC = () => {
   const colorScheme = useColorScheme();
   const [selectedTab, setSelectedTab] = useState<TabName>('dashboard');
+  const { state, setState } = useAppState();
+
+  const handleClose = useCallback(() => {
+    setState({ showQuitModal: true });
+  }, [setState]);
 
   const renderContent = () => {
     switch (selectedTab) {
@@ -849,9 +1178,25 @@ const App: React.FC = () => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <Text style={styles.logo}>💾</Text>
-          <Text style={styles.title}>SpaceSaver</Text>
+        <View style={styles.headerLeft}>
+          <View style={styles.logoContainer}>
+            <Text style={styles.logo}>💾</Text>
+          </View>
+          <View>
+            <Text style={styles.title}>SpaceSaver</Text>
+            <Text style={styles.subtitle}>Disk Space Manager</Text>
+          </View>
+        </View>
+        <View style={styles.headerRight}>
+          <View
+            style={styles.closeButton}
+            onStartShouldSetResponder={() => true}
+            onResponderRelease={handleClose}
+            // @ts-ignore
+            onClick={handleClose}
+          >
+            <Text style={styles.closeButtonText}>✕</Text>
+          </View>
         </View>
       </View>
 
@@ -870,27 +1215,31 @@ const App: React.FC = () => {
               selectedTab === tab.name && styles.tabActive,
             ]}
             onStartShouldSetResponder={() => true}
-            onResponderRelease={() => {
-              console.log('Tab selected:', tab.name);
-              setSelectedTab(tab.name);
-            }}
+            onResponderRelease={() => setSelectedTab(tab.name)}
             // @ts-ignore - macOS specific onClick handler
-            onClick={() => {
-              console.log('Tab clicked:', tab.name);
-              setSelectedTab(tab.name);
-            }}
+            onClick={() => setSelectedTab(tab.name)}
           >
-            <Text style={styles.tabIcon}>{tab.icon}</Text>
+            <View style={[
+              styles.tabIconContainer,
+              selectedTab === tab.name && styles.tabIconContainerActive,
+            ]}>
+              <Text style={styles.tabIcon}>{tab.icon}</Text>
+            </View>
             <Text style={[
               styles.tabLabel,
               selectedTab === tab.name && styles.tabLabelActive,
             ]}>
               {tab.label}
             </Text>
-            {selectedTab === tab.name && <View style={styles.tabIndicator} />}
           </View>
         ))}
       </View>
+
+      {/* Toast Notifications */}
+      <ToastContainer />
+      
+      {/* Quit Confirmation Modal */}
+      <QuitModal />
     </View>
   );
 };
@@ -901,24 +1250,64 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     backgroundColor: COLORS.card,
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
   },
-  titleRow: {
+  headerLeft: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  logoContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: COLORS.primaryLight + '20',
+    justifyContent: 'center',
     alignItems: 'center',
   },
   logo: {
     fontSize: 24,
-    marginRight: 8,
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: COLORS.text,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginTop: 1,
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: COLORS.backgroundAlt,
+    justifyContent: 'center',
+    alignItems: 'center',
+    cursor: 'pointer',
+  },
+  closeButtonText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
   },
   content: {
     flex: 1,
@@ -928,40 +1317,44 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-    paddingVertical: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 8,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    position: 'relative',
+    paddingVertical: 8,
     cursor: 'pointer',
-    borderRadius: 8,
+    borderRadius: 12,
   },
   tabActive: {
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    backgroundColor: COLORS.primary + '10',
+  },
+  tabIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: COLORS.backgroundAlt,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  tabIconContainerActive: {
+    backgroundColor: COLORS.primary + '15',
   },
   tabIcon: {
-    fontSize: 22,
-    marginBottom: 2,
+    fontSize: 20,
   },
   tabLabel: {
-    fontSize: 10,
-    color: COLORS.textSecondary,
+    fontSize: 11,
+    color: COLORS.textMuted,
     fontWeight: '500',
+    letterSpacing: -0.2,
   },
   tabLabelActive: {
     color: COLORS.primary,
     fontWeight: '600',
-  },
-  tabIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    width: 40,
-    height: 3,
-    backgroundColor: COLORS.primary,
-    borderRadius: 2,
   },
 });
 
