@@ -1,0 +1,17 @@
+# Docker ignore file
+node_modules
+npm-debug.log
+.git
+.gitignore
+README.md
+LICENSE
+.DS_Store
+*.md
+coverage
+.nyc_output
+macos/build
+macos/Pods
+ios/build
+ios/Pods
+android/build
+*.log

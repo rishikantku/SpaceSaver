@@ -3,9 +3,50 @@
 A comprehensive disk space management application for macOS built with React Native. Designed for macOS 15 on Apple Silicon M2.
 
 ![macOS](https://img.shields.io/badge/macOS-15+-blue)
-![React Native](https://img.shields.io/badge/React%20Native-0.73-61dafb)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)
+![React Native](https://img.shields.io/badge/React%20Native-0.77-61dafb)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue)
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED)
 ![License](https://img.shields.io/badge/License-MIT-green)
+
+## 🐳 Quick Start with Docker
+
+The fastest way to get started - no local setup required!
+
+```bash
+# Clone and run with Docker (one command)
+docker run -it $(docker build -q https://github.com/rishikantku/SpaceSaver.git)
+
+# Or build locally
+git clone https://github.com/rishikantku/SpaceSaver.git
+cd SpaceSaver
+docker build -t spacesaver .
+docker run -it spacesaver
+
+# Run tests in Docker
+docker run spacesaver npm test
+
+# Run full validation
+docker run spacesaver npm run validate
+```
+
+### Docker Compose
+
+```bash
+# Clone the repository
+git clone https://github.com/rishikantku/SpaceSaver.git
+cd SpaceSaver
+
+# Run tests
+docker-compose run test
+
+# Interactive development shell
+docker-compose run dev
+
+# Full validation (typecheck + lint + tests)
+docker-compose run validate
+```
+
+> **Note**: Docker is for development/testing. Running the actual macOS app requires macOS + Xcode.
 
 ## Features
 
@@ -70,8 +111,8 @@ A comprehensive disk space management application for macOS built with React Nat
 brew install cocoapods
 
 # 3. Clone the repository
-git clone https://github.com/yourusername/spacesaver.git
-cd spacesaver/SpaceSaverApp
+git clone https://github.com/rishikantku/SpaceSaver.git
+cd SpaceSaver
 
 # 4. Install JavaScript dependencies
 npm install
@@ -278,12 +319,63 @@ npm run test:coverage
 npm test -- ScannerService.test.ts
 ```
 
+## 🐳 Docker Reference
+
+### Available Dockerfiles
+
+| File | Purpose |
+|------|---------|
+| `Dockerfile` | Build from local source |
+| `Dockerfile.clone` | Clone from GitHub and build |
+
+### Docker Commands
+
+```bash
+# Build from local source
+docker build -t spacesaver .
+
+# Build fresh from GitHub
+docker build -f Dockerfile.clone -t spacesaver-fresh .
+
+# Run tests
+docker run spacesaver npm test
+
+# Run full validation
+docker run spacesaver npm run validate
+
+# Interactive development shell
+docker run -it spacesaver /bin/bash
+
+# Mount local source for development
+docker run -it -v $(pwd):/app spacesaver /bin/bash
+```
+
+### Docker Compose Services
+
+| Service | Command | Description |
+|---------|---------|-------------|
+| `test` | `docker-compose run test` | Run Jest tests |
+| `lint` | `docker-compose run lint` | Run ESLint |
+| `typecheck` | `docker-compose run typecheck` | TypeScript validation |
+| `validate` | `docker-compose run validate` | Full validation suite |
+| `dev` | `docker-compose run dev` | Interactive shell |
+
+### Environment Variables
+
+```bash
+# Run with custom Node environment
+docker run -e NODE_ENV=production spacesaver npm test
+
+# Enable verbose logging
+docker run -e DEBUG=true spacesaver npm test
+```
+
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/my-feature`
 3. Make your changes
-4. Run tests: `npm test`
+4. Run tests: `npm test` or `docker-compose run test`
 5. Commit: `git commit -m 'Add my feature'`
 6. Push: `git push origin feature/my-feature`
 7. Open a Pull Request

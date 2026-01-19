@@ -1,0 +1,66 @@
+# SpaceSaver - Docker Compose Configuration
+#
+# Usage:
+#   docker-compose up          # Run tests
+#   docker-compose run dev     # Interactive development shell
+#   docker-compose run test    # Run test suite
+#   docker-compose run lint    # Run linting
+#
+version: '3.8'
+
+services:
+  # Main development service
+  app:
+    build: .
+    container_name: spacesaver-app
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run validate
+    
+  # Development shell
+  dev:
+    build: .
+    container_name: spacesaver-dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+
+  # Test runner
+  test:
+    build: .
+    container_name: spacesaver-test
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm test
+
+  # Linting
+  lint:
+    build: .
+    container_name: spacesaver-lint
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run lint
+
+  # TypeScript check
+  typecheck:
+    build: .
+    container_name: spacesaver-typecheck
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run typecheck
+
+  # Full validation (typecheck + lint + test)
+  validate:
+    build: .
+    container_name: spacesaver-validate
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run validate

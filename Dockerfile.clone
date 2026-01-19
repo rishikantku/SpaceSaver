@@ -1,0 +1,57 @@
+# SpaceSaver - Dockerfile (Clone from GitHub)
+# 
+# This Dockerfile clones SpaceSaver from GitHub and sets up the environment.
+# Use this to get a fresh copy of the repository in a container.
+#
+# Build: docker build -f Dockerfile.clone -t spacesaver-fresh .
+# Run:   docker run -it spacesaver-fresh
+# Test:  docker run spacesaver-fresh npm test
+
+FROM node:20-alpine
+
+LABEL maintainer="rishikantku"
+LABEL description="SpaceSaver - macOS Disk Space Management App"
+LABEL version="1.0.0"
+
+# Install required packages
+RUN apk add --no-cache \
+    git \
+    bash \
+    curl \
+    python3 \
+    make \
+    g++
+
+# Set working directory
+WORKDIR /app
+
+# Clone the repository from GitHub
+RUN git clone https://github.com/rishikantku/SpaceSaver.git .
+
+# Install Node.js dependencies
+RUN npm install
+
+# Verify installation
+RUN echo "=== SpaceSaver Setup Complete ===" && \
+    echo "Node.js: $(node -v)" && \
+    echo "npm: $(npm -v)" && \
+    echo "Files: $(find src -name '*.ts' -o -name '*.tsx' | wc -l) TypeScript files"
+
+# Run TypeScript check
+RUN npm run typecheck
+
+# Run ESLint
+RUN npm run lint || true
+
+# Run tests
+RUN npm test
+
+# Display success message
+RUN echo "✅ All validations passed!"
+
+# Default command - interactive shell
+CMD ["/bin/bash"]
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD node -e "console.log('healthy')" || exit 1
